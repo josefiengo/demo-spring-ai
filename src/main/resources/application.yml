@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: demo-spring-ai
+  ai:
+    model:
+      chat: ollama
+    ollama:
+      base-url: http://localhost:11434
+
+server:
+  port: 8080
+
+app:
+  ai:
+    http:
+      connect-timeout: 5s
+      read-timeout: 45s
+    ollama:
+      model: gemma4:latest
+      temperature: 0.0
+      seed: 42
+      top-k: 1
+      top-p: 1.0
+      num-ctx: 2048
+      num-predict: 240
+      keep-alive: 15m
+
+logging:
+  level:
+    com.example.demospringai: INFO
+    org.springframework.ai: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"
