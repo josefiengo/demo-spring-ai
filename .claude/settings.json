@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [[ \"$CLAUDE_FILE_PATH\" == *application.yml ]]; then python3 -c \"import yaml, sys; yaml.safe_load(open('$CLAUDE_FILE_PATH'))\" 2>&1 || { echo 'BLOCKED: application.yml tiene YAML inválido. La app no arrancará. Revisá la indentación antes de continuar.'; exit 2; }; fi"
+          }
+        ]
+      }
+    ]
+  }
+}
