@@ -6,6 +6,7 @@
 - No modificar los parámetros de sampling en `application.yml` (`seed`, `temperature`, `top-k`, `top-p`, `num-predict`) sin pedido explícito — están calibrados para determinismo (`seed: 42`, `top-k: 1`, `temperature: 0.0`).
 - Toda nueva funcionalidad de AI sigue la cadena `ChatController` → `ChatService` → `AiProperties` — no llamar Spring AI directamente desde controllers ni otras capas.
 - Commits siguen Conventional Commits en inglés: `feat:`, `fix:`, `chore:`, `docs:`.
+- Nunca incluir línea `Co-Authored-By:` en mensajes de commit.
 
 ## Arquitectura
 

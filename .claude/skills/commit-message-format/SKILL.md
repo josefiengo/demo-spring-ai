@@ -64,3 +64,4 @@ Muestra:
 3. Si hay ambigüedad entre dos tipos, presenta las dos opciones con el trade-off
 
 No ejecutes `git commit`. El usuario decide cuándo y cómo commitearlo.
+No incluyas línea `Co-Authored-By:` en el mensaje generado.

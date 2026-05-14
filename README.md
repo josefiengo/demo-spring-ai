@@ -57,7 +57,7 @@ printf '%s' '{"message":"Explícame qué es Spring AI en 5 líneas"}' \
       --data-binary @-
 ```
 
-La primera respuesta con Ollama puede tardar porque el modelo se carga en memoria. Si la latencia es alta, se puede probar un modelo más pequeño y cambiar `spring.ai.ollama.chat.options.model` en `application.yml`.
+La primera respuesta con Ollama puede tardar porque el modelo se carga en memoria. Si la latencia es alta, se puede probar un modelo más pequeño y cambiar `app.ai.ollama.model` en `application.yml`.
 También se pueden ajustar `app.ai.ollama.seed`, `top-k`, `top-p`, `num-predict` y `keep-alive` para balancear determinismo, longitud de respuesta, latencia y memoria.
 
 ### Parámetros Locales de Ollama
@@ -86,7 +86,8 @@ app:
 ## Endpoints
 
 - `GET /api/health`: prueba básica sin IA.
-- `POST /api/chat`: chat normal.
+- `GET /api/chat?message=`: chat normal vía query param.
+- `POST /api/chat`: chat normal vía body JSON.
 - `POST /api/chat/lesson`: devuelve una respuesta estructurada como JSON.
 - `POST /api/chat/tools`: permite al modelo usar una herramienta Java para consultar la fecha y hora actuales.
 
@@ -105,10 +106,13 @@ src/main/java/com/example/demospringai
 │   ├── dto
 │   │   ├── ChatRequest.java
 │   │   ├── ChatResponseDto.java
+│   │   ├── ErrorResponseDto.java
 │   │   └── LessonResponse.java
 │   └── service
+│       ├── ChatOperations.java
 │       └── ChatService.java
 └── config
+    ├── AiProperties.java
     └── RestClientTimeoutConfig.java
 src/main/resources
 └── application.yml
