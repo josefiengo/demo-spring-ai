@@ -41,6 +41,26 @@
 - **`jakarta.*` no `javax.*`**: este proyecto usa Jakarta EE (Spring Boot 3.x). Nunca importar `javax.validation` ni `javax.servlet`.
 - **Nuevas tools de Spring AI**: anotar con `@Tool(description = "...")` y registrar como `@Component`. Ver `DateTimeTools`.
 
+## Principios de diseño
+
+- **Outside-In**: diseñar desde afuera hacia adentro — primero el contrato publico (endpoint, DTOs, firma de la interfaz), luego la logica interna. El plan fija el contrato antes de tocar el servicio.
+- **Tests de contrato, no de implementacion**: los tests verifican que el endpoint responde correctamente (serializacion, validacion, codigos HTTP), no como esta implementado el servicio internamente.
+
+## Flujo de trabajo
+
+Para cada nueva feature o fix, seguir este orden:
+
+1. `/context <descripcion>` — cargar contexto del area afectada
+2. `/plan <descripcion>` — generar plan con decisiones lockeadas antes de tocar codigo
+3. `git checkout -b <tipo>/<nombre>` — crear branch (`feat/`, `fix/`, `chore/`)
+4. Implementar siguiendo el plan, compilando despues de cada cambio significativo
+5. Subagente `test-output-summarizer` — verificar que los tests pasan
+6. `/refactor-style` — aplicar convenciones antes de commitear
+7. `/segment-commits` — separar cambios en commits atomicos
+8. PR a `main` — nunca push directo
+
+Los planes completados se mueven a `.claude/plans/plan-<feature>.md` marcados como `COMPLETADO`.
+
 ## Gotchas / Dragons
 
 - **Primera respuesta lenta**: Ollama carga el modelo en memoria al primer request (~10-30s). No es un bug. Si pasaron más de 15 min sin requests (`keep-alive: 15m`), el siguiente también tardará.
