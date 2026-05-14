@@ -28,6 +28,19 @@
 - `mvn spring-boot:run` — Arranca la app en :8080 (requiere Ollama up)
 - `mvn test` — Ejecuta los tests unitarios
 
+## Convenciones de código (Java 21 + Spring Boot 3.5)
+
+- **Records para DTOs y configuración**: usar `record` en lugar de clases con getters/setters. Ver `ChatRequest`, `AiProperties`, `LessonResponse`.
+- **Inyección por constructor**: nunca usar `@Autowired` en campos. El constructor es la única forma de inyectar dependencias.
+- **Interfaz + implementación en servicios**: toda lógica de negocio detrás de una interfaz (ver `ChatOperations` / `ChatService`). El controller depende de la interfaz, no de la implementación.
+- **Method references sobre lambdas**: preferir `String::valueOf` sobre `s -> String.valueOf(s)` cuando son equivalentes.
+- **Text blocks para strings multi-línea**: usar `"""..."""` para prompts del sistema y strings largas.
+- **Pattern matching para instanceof**: usar `instanceof String text` en lugar de cast explícito.
+- **Sin wildcards en imports**: cada import explícito. Nunca `import java.util.*`.
+- **Logger estático con SLF4J**: `private static final Logger log = LoggerFactory.getLogger(X.class)`. Sin Lombok ni otras abstracciones.
+- **`jakarta.*` no `javax.*`**: este proyecto usa Jakarta EE (Spring Boot 3.x). Nunca importar `javax.validation` ni `javax.servlet`.
+- **Nuevas tools de Spring AI**: anotar con `@Tool(description = "...")` y registrar como `@Component`. Ver `DateTimeTools`.
+
 ## Gotchas / Dragons
 
 - **Primera respuesta lenta**: Ollama carga el modelo en memoria al primer request (~10-30s). No es un bug. Si pasaron más de 15 min sin requests (`keep-alive: 15m`), el siguiente también tardará.
