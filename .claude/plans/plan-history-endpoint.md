@@ -1,5 +1,7 @@
 # Plan: agregar endpoint de historial
 
+**Estado: COMPLETADO** — implementado en commit `b8cdf0f`, documentado en `7474b66`.
+
 ## Summary
 
 Se agrega un endpoint `GET /api/chat/history` que devuelve la lista de todos los intercambios
@@ -47,18 +49,18 @@ exponer estructuras internas en la API.
 
 ## Task list (orden de ejecucion)
 
-1. Crear `HistoryEntryDto` como record con campos: `String endpoint`, `String message`, `String response`, `Instant timestamp`
-2. Agregar `List<HistoryEntryDto> history()` a la interfaz `ChatOperations`
-3. En `ChatService`, agregar campo `List<HistoryEntryDto> history = new CopyOnWriteArrayList<>()`
-4. En `ChatService.loggedAiCall`, agregar al historial despues de obtener la respuesta exitosa
-5. Implementar `history()` en `ChatService` devolviendo `Collections.unmodifiableList(history)`
-6. Agregar `GET /api/chat/history` en `ChatController` que retorna `List<HistoryEntryDto>`
-7. Agregar tests en `ChatControllerTest`: historial vacio al inicio, historial con una entrada tras un POST
-8. Actualizar `README.md`: agregar `GET /api/chat/history` a la seccion de Endpoints
+1. [x] Crear `HistoryEntryDto` como record con campos: `String endpoint`, `String message`, `String response`, `Instant timestamp`
+2. [x] Agregar `List<HistoryEntryDto> history()` a la interfaz `ChatOperations`
+3. [x] En `ChatService`, agregar campo `List<HistoryEntryDto> history = new CopyOnWriteArrayList<>()`
+4. [x] En `ChatService.loggedAiCall`, agregar al historial despues de obtener la respuesta exitosa
+5. [x] Implementar `history()` en `ChatService` devolviendo `Collections.unmodifiableList(history)`
+6. [x] Agregar `GET /api/chat/history` en `ChatController` que retorna `List<HistoryEntryDto>`
+7. [x] Agregar tests en `ChatControllerTest`: historial vacio al inicio, historial con una entrada tras un POST
+8. [x] Actualizar `README.md`: agregar `GET /api/chat/history` a la seccion de Endpoints
 
 ## Validation strategy
 
-- [ ] `mvn test` pasa sin errores
+- [x] `mvn test` pasa sin errores
 - [ ] Historial vacio antes de cualquier llamada:
   ```bash
   curl http://localhost:8080/api/chat/history
