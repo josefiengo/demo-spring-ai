@@ -52,7 +52,6 @@ public class ChatService implements ChatOperations {
 
     public String chat(String endpoint, String message) {
         return loggedAiCall(endpoint, message, () -> chatClient.prompt()
-                .system("Responder en español claro y directo. El usuario está aprendiendo Spring AI.")
                 .user(message)
                 .call()
                 .content());
@@ -61,8 +60,7 @@ public class ChatService implements ChatOperations {
     public LessonResponse lesson(String endpoint, String message) {
         return loggedAiCall(endpoint, message, () -> chatClient.prompt()
                 .system("""
-                        Eres un mentor senior de Java y Spring Boot.
-                        Responder siempre en español claro, con explicaciones cortas y prácticas.
+                        Responder en español claro y directo.
                         Devolver una lección breve sobre el tema solicitado.
                         """)
                 .user(message)
@@ -72,7 +70,7 @@ public class ChatService implements ChatOperations {
 
     public String chatWithTools(String endpoint, String message) {
         return loggedAiCall(endpoint, message, () -> chatClient.prompt()
-                .system("Responder en español. Usar herramientas cuando se necesiten datos actuales.")
+                .system("Usar herramientas cuando se necesiten datos actuales disponibles.")
                 .user(message)
                 .tools(dateTimeTools)
                 .call()
