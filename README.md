@@ -90,6 +90,7 @@ app:
 - `POST /api/chat`: chat normal vía body JSON.
 - `POST /api/chat/lesson`: devuelve una respuesta estructurada como JSON.
 - `POST /api/chat/tools`: permite al modelo usar una herramienta Java para consultar la fecha y hora actuales.
+- `GET /api/chat/history`: devuelve la lista de intercambios realizados desde que la aplicacion levanto.
 
 ## Estructura
 
