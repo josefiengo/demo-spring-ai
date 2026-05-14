@@ -20,7 +20,7 @@ Lee `CLAUDE.md` completo, sección "Convenciones de código". Esas son las regla
 - Trabajar solo sobre ese archivo.
 
 **Si el argumento es `--all` o no se especifica archivo**:
-- Invocar el subagent `style-auditor` para obtener el reporte de violaciones.
+- Invocar el subagent `style-auditor` usando la herramienta `Agent` sin especificar `subagent_type`, para que el sistema use la definicion en `.claude/agents/style-auditor.md`. El agente lee cada archivo Java completo con `Read` y reporta violaciones con archivo:línea. No invocar con `subagent_type: Explore` — ese tipo usa excerpts y pierde violaciones.
 - Trabajar solo sobre los archivos que el subagent reportó con violaciones. No tocar los limpios.
 
 ### Fase 2: Aplicar convenciones por archivo
