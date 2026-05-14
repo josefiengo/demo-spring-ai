@@ -153,6 +153,7 @@ Este endpoint guarda el intercambio en `/api/chat/history`.
 
 Envía un mensaje al modelo con acceso a herramientas Java registradas en Spring AI.
 Actualmente expone `DateTimeTools.getCurrentDateTime()`, que permite al modelo consultar la fecha y hora actuales.
+La tool devuelve zona horaria, fecha y hora formateada e ISO-8601; el modelo debe usar esos valores sin recalcularlos.
 Este endpoint usa un `system` prompt mínimo para indicar que puede usar herramientas cuando necesite datos actuales disponibles.
 
 **Body**
@@ -167,7 +168,7 @@ Este endpoint usa un `system` prompt mínimo para indicar que puede usar herrami
 
 ```json
 {
-  "answer": "La fecha y hora actual es 2026-05-14T18:20:00-04:00..."
+  "answer": "La fecha y hora actual es jueves, 14 de mayo de 2026, 18:20:00 en America/La_Paz."
 }
 ```
 

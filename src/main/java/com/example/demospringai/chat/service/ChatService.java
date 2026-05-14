@@ -72,7 +72,11 @@ public class ChatService implements ChatOperations {
 
     public String chatWithTools(String endpoint, String message) {
         return loggedAiCall(endpoint, message, () -> chatClient.prompt()
-                .system("Usar herramientas cuando se necesiten datos actuales disponibles.")
+                .system("""
+                        Usar herramientas cuando se necesiten datos actuales disponibles.
+                        Si una herramienta devuelve fecha u hora, usar esos valores literalmente.
+                        No recalcular ni inferir día de semana, zona horaria o calendario.
+                        """)
                 .user(message)
                 .tools(dateTimeTools)
                 .call()
