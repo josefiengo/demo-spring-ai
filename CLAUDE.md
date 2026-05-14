@@ -57,7 +57,8 @@ Para cada nueva feature o fix, seguir este orden:
 5. Subagente `test-output-summarizer` — verificar que los tests pasan
 6. `/refactor-style` — aplicar convenciones antes de commitear
 7. `/segment-commits` — separar cambios en commits atomicos
-8. PR a `main` — nunca push directo
+8. `git push origin <branch>` — el agente puede ejecutar el push del branch
+9. PR a `main` — crearlo manualmente en GitHub. No usar `gh` ni ninguna herramienta de CLI para crear PRs
 
 Los planes completados se mueven a `.claude/plans/plan-<feature>.md` marcados como `COMPLETADO`.
 
