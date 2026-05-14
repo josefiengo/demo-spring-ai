@@ -228,6 +228,15 @@ Los endpoints `POST /api/chat`, `POST /api/chat/lesson` y `POST /api/chat/tools`
 }
 ```
 
+**Respuesta estructurada inválida: `502 Bad Gateway`**
+
+```json
+{
+  "code": "AI_INVALID_RESPONSE",
+  "message": "El modelo devolvió una respuesta que no cumple el formato esperado. Reintentar la solicitud."
+}
+```
+
 **Error al llamar al modelo: `502 Bad Gateway`**
 
 ```json

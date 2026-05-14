@@ -11,6 +11,7 @@ import java.util.List;
 
 import com.example.demospringai.chat.dto.HistoryEntryDto;
 import com.example.demospringai.chat.dto.LessonResponse;
+import com.example.demospringai.chat.service.AiResponseFormatException;
 import com.example.demospringai.chat.service.ChatOperations;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -87,6 +88,21 @@ class ChatControllerTest {
                 .andExpect(jsonPath("$[0].timestamp").exists());
     }
 
+    @Test
+    void lessonReturnsBadGatewayWhenAiResponseHasInvalidFormat() throws Exception {
+        mockMvc = MockMvcBuilders
+                .standaloneSetup(new ChatController(new TestChatOperationsWithInvalidLessonResponse()))
+                .setControllerAdvice(new ChatExceptionHandler())
+                .setValidator(validator())
+                .build();
+
+        mockMvc.perform(post("/api/chat/lesson")
+                        .contentType("application/json")
+                        .content("{\"message\":\"Explica ChatClient\"}"))
+                .andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$.code").value("AI_INVALID_RESPONSE"));
+    }
+
     private static class TestChatOperations implements ChatOperations {
 
         @Override
@@ -116,5 +132,19 @@ class ChatControllerTest {
         public List<HistoryEntryDto> history() {
             return List.of(new HistoryEntryDto("POST /api/chat", "Hola", "Respuesta", Instant.parse("2026-05-14T12:00:00Z")));
         }
+    }
+
+    private static class TestChatOperationsWithInvalidLessonResponse extends TestChatOperations {
+
+        @Override
+        public LessonResponse lesson(String endpoint, String message) {
+            throw new AiResponseFormatException("Respuesta inválida", new RuntimeException("JSON inválido"));
+        }
+    }
+
+    private static LocalValidatorFactoryBean validator() {
+        LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
+        validator.afterPropertiesSet();
+        return validator;
     }
 }

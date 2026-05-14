@@ -7,6 +7,7 @@ import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -58,14 +59,15 @@ public class ChatService implements ChatOperations {
     }
 
     public LessonResponse lesson(String endpoint, String message) {
-        return loggedAiCall(endpoint, message, () -> chatClient.prompt()
+        return loggedAiCall(endpoint, message, () -> parseLessonResponse(chatClient.prompt()
                 .system("""
                         Responder en español claro y directo.
                         Devolver una lección breve sobre el tema solicitado.
+                        Mantener topic, explanation y nextExercise en una oración corta.
+                        Usar exactamente 3 keyIdeas, cada una de hasta 12 palabras.
                         """)
                 .user(message)
-                .call()
-                .entity(LessonResponse.class));
+                .call()));
     }
 
     public String chatWithTools(String endpoint, String message) {
@@ -94,6 +96,11 @@ public class ChatService implements ChatOperations {
         }
         catch (RuntimeException exception) {
             long elapsedMillis = elapsedMillis(start);
+            if (exception instanceof AiResponseFormatException) {
+                log.warn("ai.request.invalid-response id={} endpoint=\"{}\" elapsedMs={} error=\"{}\"",
+                        requestId, endpoint, elapsedMillis, exception.getMessage());
+                throw exception;
+            }
             log.error("ai.request.failed id={} endpoint=\"{}\" elapsedMs={} error=\"{}\"",
                     requestId, endpoint, elapsedMillis, exception.getMessage(), exception);
             throw exception;
@@ -129,5 +136,28 @@ public class ChatService implements ChatOperations {
             return text.length();
         }
         return response.toString().length();
+    }
+
+    private static LessonResponse parseLessonResponse(ChatClient.CallResponseSpec responseSpec) {
+        try {
+            return responseSpec.entity(LessonResponse.class);
+        }
+        catch (RuntimeException exception) {
+            if (hasCause(exception, JsonProcessingException.class)) {
+                throw new AiResponseFormatException("El modelo devolvió una respuesta estructurada inválida", exception);
+            }
+            throw exception;
+        }
+    }
+
+    private static boolean hasCause(Throwable exception, Class<? extends Throwable> causeType) {
+        Throwable current = exception;
+        while (current != null) {
+            if (causeType.isInstance(current)) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 }

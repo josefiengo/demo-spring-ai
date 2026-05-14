@@ -14,6 +14,7 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
 
 import com.example.demospringai.chat.dto.ErrorResponseDto;
+import com.example.demospringai.chat.service.AiResponseFormatException;
 
 @RestControllerAdvice
 public class ChatExceptionHandler {
@@ -53,5 +54,13 @@ public class ChatExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                 .body(new ErrorResponseDto("AI_UNAVAILABLE",
                         "No se pudo obtener respuesta del modelo de IA. Revisar Ollama y el modelo configurado."));
+    }
+
+    @ExceptionHandler(AiResponseFormatException.class)
+    ResponseEntity<ErrorResponseDto> handleInvalidAiResponse(AiResponseFormatException exception) {
+        log.warn("ai.response.invalid-format error=\"{}\"", exception.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(new ErrorResponseDto("AI_INVALID_RESPONSE",
+                        "El modelo devolvió una respuesta que no cumple el formato esperado. Reintentar la solicitud."));
     }
 }
