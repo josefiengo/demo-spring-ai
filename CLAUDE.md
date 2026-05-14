@@ -7,6 +7,9 @@
 - Toda nueva funcionalidad de AI sigue la cadena `ChatController` → `ChatService` → `AiProperties` — no llamar Spring AI directamente desde controllers ni otras capas.
 - Commits siguen Conventional Commits en inglés: `feat:`, `fix:`, `chore:`, `docs:`.
 - Nunca incluir línea `Co-Authored-By:` en mensajes de commit.
+- Responder siempre en español neutro: conversación, documentación, comentarios de código y cualquier texto generado. Sin regionalismos de ninguna variante. Si el usuario pide explícitamente otro idioma, usar ese idioma solo para esa respuesta.
+- Nunca usar emojis en ningún contexto: respuestas, documentación ni código.
+- Comentarios en código solo cuando el motivo no es obvio por el nombre del método o la variable. Nunca bloques multi-línea descriptivos ni comentarios que expliquen qué hace el código.
 
 ## Arquitectura
 
