@@ -1,6 +1,10 @@
 package com.example.demospringai.chat.service;
 
+import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
@@ -10,6 +14,7 @@ import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.stereotype.Service;
 
 import com.example.demospringai.ai.tools.DateTimeTools;
+import com.example.demospringai.chat.dto.HistoryEntryDto;
 import com.example.demospringai.chat.dto.LessonResponse;
 import com.example.demospringai.config.AiProperties;
 
@@ -22,6 +27,7 @@ public class ChatService implements ChatOperations {
     private final ChatClient chatClient;
     private final DateTimeTools dateTimeTools;
     private final String providerModel;
+    private final List<HistoryEntryDto> history = new CopyOnWriteArrayList<>();
 
     public ChatService(
             ChatClient.Builder builder,
@@ -85,6 +91,7 @@ public class ChatService implements ChatOperations {
             long elapsedMillis = elapsedMillis(start);
             log.info("ai.request.done id={} endpoint=\"{}\" elapsedMs={} responseType={} responseChars={}",
                     requestId, endpoint, elapsedMillis, responseType(response), responseChars(response));
+            history.add(new HistoryEntryDto(endpoint, message, String.valueOf(response), Instant.now()));
             return response;
         }
         catch (RuntimeException exception) {
@@ -93,6 +100,11 @@ public class ChatService implements ChatOperations {
                     requestId, endpoint, elapsedMillis, exception.getMessage(), exception);
             throw exception;
         }
+    }
+
+    @Override
+    public List<HistoryEntryDto> history() {
+        return Collections.unmodifiableList(history);
     }
 
     private static long elapsedMillis(long startNanos) {

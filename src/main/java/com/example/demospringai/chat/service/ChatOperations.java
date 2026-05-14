@@ -1,5 +1,8 @@
 package com.example.demospringai.chat.service;
 
+import java.util.List;
+
+import com.example.demospringai.chat.dto.HistoryEntryDto;
 import com.example.demospringai.chat.dto.LessonResponse;
 
 public interface ChatOperations {
@@ -9,4 +12,6 @@ public interface ChatOperations {
     LessonResponse lesson(String endpoint, String message);
 
     String chatWithTools(String endpoint, String message);
+
+    List<HistoryEntryDto> history();
 }

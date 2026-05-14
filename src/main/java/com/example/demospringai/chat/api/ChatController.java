@@ -9,8 +9,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 import com.example.demospringai.chat.dto.ChatRequest;
 import com.example.demospringai.chat.dto.ChatResponseDto;
+import com.example.demospringai.chat.dto.HistoryEntryDto;
 import com.example.demospringai.chat.dto.LessonResponse;
 import com.example.demospringai.chat.service.ChatOperations;
 
@@ -47,5 +50,10 @@ public class ChatController {
     @PostMapping("/chat/tools")
     public ChatResponseDto tools(@Valid @RequestBody ChatRequest request) {
         return new ChatResponseDto(chatOperations.chatWithTools("POST /api/chat/tools", request.message()));
+    }
+
+    @GetMapping("/chat/history")
+    public List<HistoryEntryDto> history() {
+        return chatOperations.history();
     }
 }
