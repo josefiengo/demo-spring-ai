@@ -5,10 +5,10 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.stereotype.Service;
 
@@ -25,12 +25,16 @@ public class ChatService implements ChatOperations {
     private static final Logger log = LoggerFactory.getLogger(ChatService.class);
     private static final int MAX_CONTEXT_ENTRIES = 6;
     private static final int MAX_CONTEXT_CHARS = 6_000;
+    private static final String PLAIN_TEXT_INSTRUCTION =
+            "Responder en español con texto plano, sin markdown, sin encabezados, sin listas con asteriscos ni guiones.\n";
+
+    private static final BeanOutputConverter<LessonResponse> LESSON_CONVERTER =
+            new BeanOutputConverter<>(LessonResponse.class);
 
     private final ChatClient chatClient;
     private final DateTimeTools dateTimeTools;
     private final SpringAiConceptTools springAiConceptTools;
     private final ConversationHistoryStore historyStore;
-    private final ObjectMapper objectMapper;
     private final String providerModel;
 
     public ChatService(
@@ -38,7 +42,6 @@ public class ChatService implements ChatOperations {
             DateTimeTools dateTimeTools,
             SpringAiConceptTools springAiConceptTools,
             ConversationHistoryStore historyStore,
-            ObjectMapper objectMapper,
             AiProperties aiProperties) {
         AiProperties.Ollama ollama = aiProperties.ollama();
         builder.defaultOptions(OllamaChatOptions.builder()
@@ -56,25 +59,25 @@ public class ChatService implements ChatOperations {
         this.dateTimeTools = dateTimeTools;
         this.springAiConceptTools = springAiConceptTools;
         this.historyStore = historyStore;
-        this.objectMapper = objectMapper;
         this.providerModel = ollama.model();
     }
 
     public ChatResponseDto chat(String endpoint, String message, String requestedConversationId) {
         String conversationId = historyStore.resolveConversationId(requestedConversationId);
-        String answer = loggedAiCall(endpoint, conversationId, message, () -> chatContent(conversationContext(conversationId), message));
+        String answer = loggedAiCall(endpoint, conversationId, message, () -> chatContent(
+                withConversationContext(conversationId, PLAIN_TEXT_INSTRUCTION), message));
         return new ChatResponseDto(answer, conversationId);
     }
 
     public LessonResponse lesson(String endpoint, String message, String requestedConversationId) {
         String conversationId = historyStore.resolveConversationId(requestedConversationId);
         LessonResponse lesson = loggedAiCall(endpoint, conversationId, message, () -> parseLessonResponse(chatClient.prompt()
-                .system(withConversationContext(conversationId, """
-                        Responder en español claro y directo.
+                .system(withConversationContext(conversationId,
+                        PLAIN_TEXT_INSTRUCTION + """
                         Devolver una lección breve sobre el tema solicitado.
                         Mantener topic, explanation y nextExercise en una oración corta.
                         Usar exactamente 3 keyIdeas, cada una de hasta 12 palabras.
-                        """))
+                        """ + LESSON_CONVERTER.getFormat()))
                 .user(message)
                 .call()));
         return new LessonResponse(
@@ -88,7 +91,8 @@ public class ChatService implements ChatOperations {
     public ChatResponseDto chatWithTools(String endpoint, String message, String requestedConversationId) {
         String conversationId = historyStore.resolveConversationId(requestedConversationId);
         String answer = loggedAiCall(endpoint, conversationId, message, () -> chatClient.prompt()
-                .system(withConversationContext(conversationId, """
+                .system(withConversationContext(conversationId,
+                        PLAIN_TEXT_INSTRUCTION + """
                         Usar herramientas cuando se necesiten datos actuales disponibles.
                         Si una herramienta devuelve fecha u hora, usar esos valores literalmente.
                         No recalcular ni inferir día de semana, zona horaria o calendario.
@@ -200,14 +204,17 @@ public class ChatService implements ChatOperations {
         return response.toString().length();
     }
 
-    private LessonResponse parseLessonResponse(ChatClient.CallResponseSpec responseSpec) {
+    private static LessonResponse parseLessonResponse(ChatClient.CallResponseSpec responseSpec) {
         String rawContent = responseSpec.content();
         try {
-            return objectMapper.readValue(rawContent, LessonResponse.class);
+            return LESSON_CONVERTER.convert(rawContent);
         }
-        catch (JsonProcessingException exception) {
-            log.warn("ai.response.invalid-format rawContent=\"{}\"", rawContent);
-            throw new AiResponseFormatException("El modelo devolvió una respuesta estructurada inválida", exception);
+        catch (RuntimeException exception) {
+            if (hasCause(exception, JsonProcessingException.class)) {
+                log.warn("ai.response.invalid-format rawContent=\"{}\"", rawContent);
+                throw new AiResponseFormatException("El modelo devolvió una respuesta estructurada inválida", exception);
+            }
+            throw exception;
         }
     }
 
