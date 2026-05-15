@@ -15,7 +15,7 @@ public class DateTimeTools {
     private static final DateTimeFormatter SPANISH_DATE_TIME_FORMATTER = DateTimeFormatter
             .ofPattern("EEEE, d 'de' MMMM 'de' uuuu, HH:mm:ss", Locale.forLanguageTag("es"));
 
-    @Tool(description = "Obtiene la fecha y hora actuales en la zona horaria del usuario")
+    @Tool(description = "Obtiene la fecha y hora actuales en la zona horaria del contexto de la solicitud")
     public String getCurrentDateTime() {
         ZoneId zoneId = LocaleContextHolder.getTimeZone().toZoneId();
         ZonedDateTime now = ZonedDateTime.now(zoneId);
