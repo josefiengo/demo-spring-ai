@@ -1,6 +1,6 @@
 ---
 name: plan
-description: Genera plan.md estructurado para implementar una feature, después de tener contexto cargado con /context.
+description: Genera plan estructurado para implementar una feature, después de tener contexto cargado con /context.
 argument-hint: <feature-description>
 ---
 
@@ -24,9 +24,9 @@ Antes de escribir el plan, identifica decisiones no triviales:
 
 Si hay ambigüedad importante, **pregunta antes de continuar**.
 
-### Fase 2: Generar `plan.md`
+### Fase 2: Generar el plan
 
-Escribe un archivo `plan.md` en la raíz del repo. Estructura obligatoria:
+Escribe el archivo directamente en `.claude/plans/plan-<feature>.md` (nunca en la raíz del repo). Deriva `<feature>` del argumento: kebab-case, conciso. Estructura obligatoria:
 
 ```markdown
 # Plan: <feature-name>
