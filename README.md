@@ -175,11 +175,43 @@ El modelo elige qué tool invocar según el mensaje del usuario. Este endpoint u
 }
 ```
 
+**Campos**
+
+| Nombre | Tipo | Requerido | Validación |
+|--------|------|-----------|------------|
+| `message` | `string` | Sí | No puede estar vacío; máximo 2000 caracteres |
+| `conversationId` | `string` | No | Máximo 80 caracteres; letras, números, `.`, `-`, `_`, `:` |
+
+**Ejemplo — consultar fecha y hora**
+
+```bash
+curl -X POST http://localhost:8080/api/chat/tools \
+  -H "Content-Type: application/json" \
+  -d '{"message":"Qué fecha y hora es ahora?","conversationId":"curso-1"}'
+```
+
 **Response `200 OK`**
 
 ```json
 {
   "answer": "La fecha y hora actual es jueves, 14 de mayo de 2026, 18:20:00 en America/La_Paz.",
+  "conversationId": "curso-1"
+}
+```
+
+**Ejemplo — obtener un concepto de Spring AI**
+
+```bash
+curl -X POST http://localhost:8080/api/chat/tools \
+  -H "Content-Type: application/json" \
+  -d '{"message":"Dame un concepto de Spring AI","conversationId":"curso-1"}'
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "answer": "ChatClient es la API fluida de Spring AI para construir y enviar prompts a un modelo de chat.",
   "conversationId": "curso-1"
 }
 ```
