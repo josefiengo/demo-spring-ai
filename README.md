@@ -38,7 +38,7 @@ Base URL local: `http://localhost:8080`
 | `POST` | `/api/chat` | Chat vía body JSON |
 | `POST` | `/api/chat/lesson` | Respuesta estructurada como JSON |
 | `POST` | `/api/chat/tools` | Chat con acceso a herramientas Java (fecha y hora) |
-| `GET` | `/api/chat/history` | Historial de intercambios de la sesión actual |
+| `GET` | `/api/chat/history?conversationId=` | Historial de intercambios de una conversación |
 
 ### `GET /api/health`
 
@@ -66,23 +66,25 @@ Envía un mensaje al modelo usando un query param.
 
 | Nombre | Tipo | Requerido | Descripción |
 |--------|------|-----------|-------------|
-| `message` | `string` | Sí | Prompt o pregunta para el modelo |
+| `message` | `string` | Sí | Prompt o pregunta para el modelo; máximo 2000 caracteres |
+| `conversationId` | `string` | No | Identificador de conversación existente |
 
 **Request**
 
 ```bash
-curl "http://localhost:8080/api/chat?message=Que%20es%20Spring%20AI%3F"
+curl "http://localhost:8080/api/chat?message=Que%20es%20Spring%20AI%3F&conversationId=curso-1"
 ```
 
 **Response `200 OK`**
 
 ```json
 {
-  "answer": "Respuesta generada por el modelo..."
+  "answer": "Respuesta generada por el modelo...",
+  "conversationId": "curso-1"
 }
 ```
 
-Este endpoint guarda el intercambio en `/api/chat/history`.
+Este endpoint se conserva por simplicidad didáctica. Para evitar prompts en URLs, preferir `POST /api/chat`.
 
 ### `POST /api/chat`
 
@@ -92,7 +94,8 @@ Envía un mensaje al modelo usando un body JSON.
 
 ```json
 {
-  "message": "Qué es Spring AI?"
+  "message": "Qué es Spring AI?",
+  "conversationId": "curso-1"
 }
 ```
 
@@ -100,7 +103,8 @@ Envía un mensaje al modelo usando un body JSON.
 
 | Nombre | Tipo | Requerido | Validación |
 |--------|------|-----------|------------|
-| `message` | `string` | Sí | No puede estar vacío |
+| `message` | `string` | Sí | No puede estar vacío; máximo 2000 caracteres |
+| `conversationId` | `string` | No | Máximo 80 caracteres; letras, números, `.`, `-`, `_`, `:` |
 
 **Request**
 
@@ -114,11 +118,12 @@ curl -X POST http://localhost:8080/api/chat \
 
 ```json
 {
-  "answer": "Respuesta generada por el modelo..."
+  "answer": "Respuesta generada por el modelo...",
+  "conversationId": "curso-1"
 }
 ```
 
-Este endpoint guarda el intercambio en `/api/chat/history`.
+Si no se envía `conversationId`, la API genera uno y lo devuelve. Los siguientes mensajes pueden reutilizarlo para mantener contexto conversacional en memoria.
 
 ### `POST /api/chat/lesson`
 
@@ -128,7 +133,8 @@ Pide una lección breve y devuelve una respuesta estructurada. Este endpoint usa
 
 ```json
 {
-  "message": "Explícame qué es un ChatClient en Spring AI"
+  "message": "Explícame qué es un ChatClient en Spring AI",
+  "conversationId": "curso-1"
 }
 ```
 
@@ -143,7 +149,8 @@ Pide una lección breve y devuelve una respuesta estructurada. Este endpoint usa
     "Puede devolver texto o mapear la respuesta a un DTO",
     "Centraliza opciones del modelo y llamadas a herramientas"
   ],
-  "nextExercise": "Crear un endpoint que use ChatClient para resumir un texto corto."
+  "nextExercise": "Crear un endpoint que use ChatClient para resumir un texto corto.",
+  "conversationId": "curso-1"
 }
 ```
 
@@ -160,7 +167,8 @@ Este endpoint usa un `system` prompt mínimo para indicar que puede usar herrami
 
 ```json
 {
-  "message": "Qué fecha y hora es ahora?"
+  "message": "Qué fecha y hora es ahora?",
+  "conversationId": "curso-1"
 }
 ```
 
@@ -168,7 +176,8 @@ Este endpoint usa un `system` prompt mínimo para indicar que puede usar herrami
 
 ```json
 {
-  "answer": "La fecha y hora actual es jueves, 14 de mayo de 2026, 18:20:00 en America/La_Paz."
+  "answer": "La fecha y hora actual es jueves, 14 de mayo de 2026, 18:20:00 en America/La_Paz.",
+  "conversationId": "curso-1"
 }
 ```
 
@@ -176,13 +185,15 @@ Este endpoint guarda el intercambio en `/api/chat/history`.
 
 ### `GET /api/chat/history`
 
-Devuelve los intercambios registrados en memoria durante la ejecución actual de la aplicación.
+Devuelve los intercambios registrados en memoria para el `conversationId` indicado.
 Al reiniciar la aplicación, el historial vuelve a empezar vacío.
+Si no se envía `conversationId`, devuelve una lista vacía para evitar exponer conversaciones ajenas.
+Cada conversación conserva hasta 50 intercambios recientes.
 
 **Request**
 
 ```bash
-curl http://localhost:8080/api/chat/history
+curl "http://localhost:8080/api/chat/history?conversationId=curso-1"
 ```
 
 **Response `200 OK`**
@@ -193,7 +204,8 @@ curl http://localhost:8080/api/chat/history
     "endpoint": "POST /api/chat",
     "message": "Qué es Spring AI?",
     "response": "Spring AI es un proyecto de Spring...",
-    "timestamp": "2026-05-14T22:20:00Z"
+    "timestamp": "2026-05-14T22:20:00Z",
+    "conversationId": "curso-1"
   }
 ]
 ```
@@ -220,12 +232,30 @@ Los endpoints `POST /api/chat`, `POST /api/chat/lesson` y `POST /api/chat/tools`
 }
 ```
 
+**Mensaje demasiado largo: `400 Bad Request`**
+
+```json
+{
+  "code": "INVALID_REQUEST",
+  "message": "El campo message no puede superar 2000 caracteres"
+}
+```
+
 **Timeout de Ollama: `504 Gateway Timeout`**
 
 ```json
 {
   "code": "AI_TIMEOUT",
   "message": "Ollama no respondió a tiempo. Verificar que el modelo esté cargado o probar con un modelo más pequeño."
+}
+```
+
+**Modelo no descargado: `502 Bad Gateway`**
+
+```json
+{
+  "code": "AI_MODEL_NOT_FOUND",
+  "message": "El modelo configurado no está disponible en Ollama. Descargarlo o cambiar la configuración."
 }
 ```
 

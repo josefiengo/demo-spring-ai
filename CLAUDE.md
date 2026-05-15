@@ -24,7 +24,7 @@
 ## Comandos esenciales
 
 - `docker compose up -d` — Levanta Ollama en Docker
-- `docker compose exec ollama ollama pull gemma4` — Descarga el modelo si no está
+- `docker compose exec ollama ollama pull gemma4:latest` — Descarga el modelo si no está
 - `mvn spring-boot:run` — Arranca la app en :8080 (requiere Ollama up)
 - `mvn test` — Ejecuta los tests unitarios
 
