@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.time.Instant;
 import java.util.List;
 
+import com.example.demospringai.chat.dto.ChatResponseDto;
 import com.example.demospringai.chat.dto.HistoryEntryDto;
 import com.example.demospringai.chat.dto.LessonResponse;
 import com.example.demospringai.chat.service.AiResponseFormatException;
@@ -41,7 +42,18 @@ class ChatControllerTest {
                         .content("{\"message\":\"Hola\"}"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith("application/json"))
-                .andExpect(jsonPath("$.answer").value("Respuesta"));
+                .andExpect(jsonPath("$.answer").value("Respuesta"))
+                .andExpect(jsonPath("$.conversationId").value("generated-conversation"));
+    }
+
+    @Test
+    void chatAcceptsConversationId() throws Exception {
+        mockMvc.perform(post("/api/chat")
+                        .contentType("application/json")
+                        .content("{\"message\":\"Hola\",\"conversationId\":\"curso-1\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.answer").value("Respuesta"))
+                .andExpect(jsonPath("$.conversationId").value("curso-1"));
     }
 
     @Test
@@ -55,12 +67,41 @@ class ChatControllerTest {
     }
 
     @Test
+    void chatRejectsTooLongMessage() throws Exception {
+        String longMessage = "a".repeat(2001);
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType("application/json")
+                        .content("{\"message\":\"" + longMessage + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.message").value("El campo message no puede superar 2000 caracteres"));
+    }
+
+    @Test
     void chatRejectsMalformedJson() throws Exception {
         mockMvc.perform(post("/api/chat")
                         .contentType("application/json")
                         .content("{\"message\":"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_JSON"));
+    }
+
+    @Test
+    void chatFromQueryRejectsBlankMessage() throws Exception {
+        mockMvc.perform(get("/api/chat").param("message", ""))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+    }
+
+    @Test
+    void toolsReturnsAnswerAndConversationId() throws Exception {
+        mockMvc.perform(post("/api/chat/tools")
+                        .contentType("application/json")
+                        .content("{\"message\":\"Qué hora es?\",\"conversationId\":\"tools-1\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.answer").value("Respuesta con tools"))
+                .andExpect(jsonPath("$.conversationId").value("tools-1"));
     }
 
     @Test
@@ -79,13 +120,14 @@ class ChatControllerTest {
                 .setControllerAdvice(new ChatExceptionHandler())
                 .build();
 
-        mockMvc.perform(get("/api/chat/history"))
+        mockMvc.perform(get("/api/chat/history").param("conversationId", "curso-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].endpoint").value("POST /api/chat"))
                 .andExpect(jsonPath("$[0].message").value("Hola"))
                 .andExpect(jsonPath("$[0].response").value("Respuesta"))
-                .andExpect(jsonPath("$[0].timestamp").exists());
+                .andExpect(jsonPath("$[0].timestamp").exists())
+                .andExpect(jsonPath("$[0].conversationId").value("curso-1"));
     }
 
     @Test
@@ -106,22 +148,24 @@ class ChatControllerTest {
     private static class TestChatOperations implements ChatOperations {
 
         @Override
-        public String chat(String endpoint, String message) {
-            return "Respuesta";
+        public ChatResponseDto chat(String endpoint, String message, String conversationId) {
+            return new ChatResponseDto("Respuesta", conversationId == null ? "generated-conversation" : conversationId);
         }
 
         @Override
-        public LessonResponse lesson(String endpoint, String message) {
-            return new LessonResponse("Titulo", "Resumen", List.of("Idea"), "Ejercicio");
+        public LessonResponse lesson(String endpoint, String message, String conversationId) {
+            return new LessonResponse("Titulo", "Resumen", List.of("Idea"), "Ejercicio",
+                    conversationId == null ? "generated-conversation" : conversationId);
         }
 
         @Override
-        public String chatWithTools(String endpoint, String message) {
-            return "Respuesta con tools";
+        public ChatResponseDto chatWithTools(String endpoint, String message, String conversationId) {
+            return new ChatResponseDto("Respuesta con tools",
+                    conversationId == null ? "generated-conversation" : conversationId);
         }
 
         @Override
-        public List<HistoryEntryDto> history() {
+        public List<HistoryEntryDto> history(String conversationId) {
             return List.of();
         }
     }
@@ -129,15 +173,16 @@ class ChatControllerTest {
     private static class TestChatOperationsWithHistory extends TestChatOperations {
 
         @Override
-        public List<HistoryEntryDto> history() {
-            return List.of(new HistoryEntryDto("POST /api/chat", "Hola", "Respuesta", Instant.parse("2026-05-14T12:00:00Z")));
+        public List<HistoryEntryDto> history(String conversationId) {
+            return List.of(new HistoryEntryDto("POST /api/chat", "Hola", "Respuesta",
+                    Instant.parse("2026-05-14T12:00:00Z"), conversationId));
         }
     }
 
     private static class TestChatOperationsWithInvalidLessonResponse extends TestChatOperations {
 
         @Override
-        public LessonResponse lesson(String endpoint, String message) {
+        public LessonResponse lesson(String endpoint, String message, String conversationId) {
             throw new AiResponseFormatException("Respuesta inválida", new RuntimeException("JSON inválido"));
         }
     }
