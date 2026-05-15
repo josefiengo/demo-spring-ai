@@ -5,6 +5,7 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -12,6 +13,7 @@ import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.stereotype.Service;
 
 import com.example.demospringai.ai.tools.DateTimeTools;
+import com.example.demospringai.ai.tools.SpringAiConceptTools;
 import com.example.demospringai.chat.dto.ChatResponseDto;
 import com.example.demospringai.chat.dto.HistoryEntryDto;
 import com.example.demospringai.chat.dto.LessonResponse;
@@ -26,13 +28,17 @@ public class ChatService implements ChatOperations {
 
     private final ChatClient chatClient;
     private final DateTimeTools dateTimeTools;
+    private final SpringAiConceptTools springAiConceptTools;
     private final ConversationHistoryStore historyStore;
+    private final ObjectMapper objectMapper;
     private final String providerModel;
 
     public ChatService(
             ChatClient.Builder builder,
             DateTimeTools dateTimeTools,
+            SpringAiConceptTools springAiConceptTools,
             ConversationHistoryStore historyStore,
+            ObjectMapper objectMapper,
             AiProperties aiProperties) {
         AiProperties.Ollama ollama = aiProperties.ollama();
         builder.defaultOptions(OllamaChatOptions.builder()
@@ -48,7 +54,9 @@ public class ChatService implements ChatOperations {
                 .build());
         this.chatClient = builder.build();
         this.dateTimeTools = dateTimeTools;
+        this.springAiConceptTools = springAiConceptTools;
         this.historyStore = historyStore;
+        this.objectMapper = objectMapper;
         this.providerModel = ollama.model();
     }
 
@@ -86,7 +94,7 @@ public class ChatService implements ChatOperations {
                         No recalcular ni inferir día de semana, zona horaria o calendario.
                         """))
                 .user(message)
-                .tools(dateTimeTools)
+                .tools(dateTimeTools, springAiConceptTools)
                 .call()
                 .content());
         return new ChatResponseDto(answer, conversationId);
@@ -109,10 +117,10 @@ public class ChatService implements ChatOperations {
         }
         catch (RuntimeException exception) {
             long elapsedMillis = elapsedMillis(start);
-            if (exception instanceof AiResponseFormatException) {
+            if (exception instanceof AiResponseFormatException formatException) {
                 log.warn("ai.request.invalid-response id={} endpoint=\"{}\" elapsedMs={} error=\"{}\"",
-                        requestId, endpoint, elapsedMillis, exception.getMessage());
-                throw exception;
+                        requestId, endpoint, elapsedMillis, formatException.getMessage());
+                throw formatException;
             }
             log.error("ai.request.failed id={} endpoint=\"{}\" elapsedMs={} error=\"{}\"",
                     requestId, endpoint, elapsedMillis, exception.getMessage(), exception);
@@ -192,15 +200,14 @@ public class ChatService implements ChatOperations {
         return response.toString().length();
     }
 
-    private static LessonResponse parseLessonResponse(ChatClient.CallResponseSpec responseSpec) {
+    private LessonResponse parseLessonResponse(ChatClient.CallResponseSpec responseSpec) {
+        String rawContent = responseSpec.content();
         try {
-            return responseSpec.entity(LessonResponse.class);
+            return objectMapper.readValue(rawContent, LessonResponse.class);
         }
-        catch (RuntimeException exception) {
-            if (hasCause(exception, JsonProcessingException.class)) {
-                throw new AiResponseFormatException("El modelo devolvió una respuesta estructurada inválida", exception);
-            }
-            throw exception;
+        catch (JsonProcessingException exception) {
+            log.warn("ai.response.invalid-format rawContent=\"{}\"", rawContent);
+            throw new AiResponseFormatException("El modelo devolvió una respuesta estructurada inválida", exception);
         }
     }
 
