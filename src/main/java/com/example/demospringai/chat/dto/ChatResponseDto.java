@@ -1,4 +1,14 @@
 package com.example.demospringai.chat.dto;
 
-public record ChatResponseDto(String answer) {
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public record ChatResponseDto(
+        String answer,
+        String conversationId
+) {
+
+    public ChatResponseDto(String answer) {
+        this(answer, null);
+    }
 }

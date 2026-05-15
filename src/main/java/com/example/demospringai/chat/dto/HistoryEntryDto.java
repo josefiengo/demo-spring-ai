@@ -6,6 +6,11 @@ public record HistoryEntryDto(
         String endpoint,
         String message,
         String response,
-        Instant timestamp
+        Instant timestamp,
+        String conversationId
 ) {
+
+    public HistoryEntryDto(String endpoint, String message, String response, Instant timestamp) {
+        this(endpoint, message, response, timestamp, null);
+    }
 }
