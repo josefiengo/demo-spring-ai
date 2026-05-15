@@ -159,9 +159,12 @@ Este endpoint guarda el intercambio en `/api/chat/history`.
 ### `POST /api/chat/tools`
 
 Envía un mensaje al modelo con acceso a herramientas Java registradas en Spring AI.
-Actualmente expone `DateTimeTools.getCurrentDateTime()`, que permite al modelo consultar la fecha y hora actuales.
-La tool devuelve zona horaria, fecha y hora formateada e ISO-8601; el modelo debe usar esos valores sin recalcularlos.
-Este endpoint usa un `system` prompt mínimo para indicar que puede usar herramientas cuando necesite datos actuales disponibles.
+Expone dos tools:
+
+- `DateTimeTools.getCurrentDateTime()` — devuelve zona horaria, fecha y hora formateada e ISO-8601; el modelo usa esos valores sin recalcularlos.
+- `SpringAiConceptTools.getRandomSpringAiConcept()` — devuelve un concepto aleatorio de Spring AI con su definición en español.
+
+El modelo elige qué tool invocar según el mensaje del usuario. Este endpoint usa un `system` prompt mínimo para indicar que puede usar herramientas cuando necesite datos actuales o conceptos disponibles.
 
 **Body**
 
