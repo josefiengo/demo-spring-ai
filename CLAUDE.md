@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 ## Hard rules
 
 - Ollama debe estar corriendo en `http://localhost:11434` antes de sugerir `mvn spring-boot:run`. Si no está up, la app falla con connection refused en el primer request de AI.
@@ -21,12 +23,43 @@
 - `ai/tools/` — Spring AI tools: funciones Java que el modelo puede invocar (ver `DateTimeTools`)
 - `config/` — Configuración de beans: `AiProperties` (custom config de Ollama), `RestClientTimeoutConfig`
 
+### Flujo de una request de chat
+
+1. `ChatController` valida la request (Bean Validation + validación manual para query params) y delega a `ChatOperations`.
+2. `ChatService` resuelve o genera el `conversationId` via `ConversationHistoryStore.resolveConversationId()`.
+3. `ChatService` construye el system prompt inyectando el historial reciente (últimas 6 entradas, tope de 6.000 caracteres) con `withConversationContext()`.
+4. Llama a Ollama via `ChatClient` y registra el intercambio en `ConversationHistoryStore.record()`.
+5. Todo `ChatClient.prompt()...call()` está envuelto en `loggedAiCall()`, que emite logs estructurados `ai.request.start` / `ai.request.done` / `ai.request.failed`.
+
+### Endpoints disponibles
+
+| Método | Path | Descripción |
+|--------|------|-------------|
+| GET | `/api/health` | Ping sin AI |
+| POST | `/api/chat` | Chat básico (body JSON) |
+| GET | `/api/chat` | Chat básico (query param `message`) |
+| POST | `/api/chat/lesson` | Respuesta estructurada `LessonResponse` via `BeanOutputConverter` |
+| POST | `/api/chat/tools` | Chat con `DateTimeTools` y `SpringAiConceptTools` habilitados |
+| GET | `/api/chat/history` | Historial en memoria de una conversación (query param `conversationId`) |
+
+### Validación de requests
+
+- `message`: obligatorio, máximo 2.000 caracteres.
+- `conversationId`: opcional, máximo 80 caracteres, patrón `^[A-Za-z0-9][A-Za-z0-9._:-]{0,79}$`. Si se omite, el servicio genera un UUID.
+
+### ConversationHistoryStore
+
+Almacenamiento en memoria puro (`ConcurrentHashMap`). No persiste entre reinicios. Límites fijos: 50 entradas por conversación, textos truncados a 4.000 caracteres antes de almacenar. El historial inyectado en el system prompt usa solo las últimas 6 entradas y está acotado a 6.000 caracteres.
+
 ## Comandos esenciales
 
 - `docker compose up -d` — Levanta Ollama en Docker
 - `docker compose exec ollama ollama pull gemma4:latest` — Descarga el modelo si no está
 - `mvn spring-boot:run` — Arranca la app en :8080 (requiere Ollama up)
-- `mvn test` — Ejecuta los tests unitarios
+- `mvn test` — Ejecuta todos los tests unitarios
+- `mvn test -Dtest=ChatControllerTest` — Ejecuta una clase de test específica
+- `mvn test -Dtest=ChatControllerTest#chatReturnsAnswer` — Ejecuta un test individual
+- `mvn compile` — Compila sin correr tests (verificación rápida después de un cambio)
 
 ## Convenciones de código (Java 21 + Spring Boot 3.5)
 
@@ -65,3 +98,6 @@ Para cada nueva feature o fix, seguir este orden:
 - **Primera respuesta lenta**: Ollama carga el modelo en memoria al primer request (~10-30s). No es un bug. Si pasaron más de 15 min sin requests (`keep-alive: 15m`), el siguiente también tardará.
 - **Configuración custom vs Spring AI**: los parámetros de Ollama están en `app.ai.ollama.*` (leídos por `AiProperties`), NO en `spring.ai.ollama.*`. Agregar config en el namespace de Spring AI directamente no será tomada.
 - **UTF-8 en Windows**: curl en Git Bash puede no enviar correctamente caracteres acentuados. Usar `printf '%s' '...' | curl ... --data-binary @-` o PowerShell con `[System.Text.Encoding]::UTF8.GetBytes($body)`.
+- **Tests sin Spring context**: `ChatControllerTest` usa `MockMvcBuilders.standaloneSetup()` con implementaciones de `ChatOperations` definidas como clases internas. No levantan el contexto de Spring, por lo que no requieren Ollama corriendo. Todos los tests de servicio y tools también son puros (sin `@SpringBootTest`).
+- **`LessonResponse` y formato estructurado**: el endpoint `/api/chat/lesson` usa `BeanOutputConverter` para mapear la respuesta del modelo a `LessonResponse`. Si el modelo devuelve JSON malformado, el servicio lanza `AiResponseFormatException` y el handler devuelve `502 Bad Gateway` con código `AI_INVALID_RESPONSE`.
+- **`disableThinking()`**: `ChatService` llama `OllamaChatOptions.builder().disableThinking()` para evitar que modelos como Gemma4 emitan bloques `<think>` en la respuesta.
