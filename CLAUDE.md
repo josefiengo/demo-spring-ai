@@ -8,10 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - No modificar los parámetros de sampling en `application.yml` (`seed`, `temperature`, `top-k`, `top-p`, `num-predict`) sin pedido explícito — están calibrados para determinismo (`seed: 42`, `top-k: 1`, `temperature: 0.0`).
 - Toda nueva funcionalidad de AI sigue la cadena `ChatController` → `ChatService` → `AiProperties` — no llamar Spring AI directamente desde controllers ni otras capas.
 - Commits siguen Conventional Commits en inglés: `feat:`, `fix:`, `chore:`, `docs:`.
-- Nunca incluir línea `Co-Authored-By:` en mensajes de commit.
 - Nunca hacer push directo a `main` o `master`. Todo cambio va en un branch y se integra por pull request.
-- Responder siempre en español neutro: conversación, documentación, comentarios de código y cualquier texto generado. Sin regionalismos de ninguna variante. Prohibido el voseo rioplatense: nunca "querés", "tenés", "hacés", "podés" — usar siempre "quieres", "tienes", "haces", "puedes". Si el usuario pide explícitamente otro idioma, usar ese idioma solo para esa respuesta.
-- Nunca usar emojis en ningún contexto: respuestas, documentación ni código.
 - Al generar o editar archivos `.md`, no revisar ni corregir la sintaxis Markdown después de escribirlos. Escribirlos bien desde el inicio y continuar.
 - Comentarios en código solo cuando el motivo no es obvio por el nombre del método o la variable. Nunca bloques multi-línea descriptivos ni comentarios que expliquen qué hace el código.
 
